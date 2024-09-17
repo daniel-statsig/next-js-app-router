@@ -1,20 +1,19 @@
 "use client";
 
+import { signal } from "@preact/signals";
 import {
   StatsigProvider,
   StatsigUser,
-  useClientBootstrapInit,
+  useClientBootstrapInit
 } from "@statsig/react-bindings";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 
 function useAuth() {
-  const [auth, setAuth] = useState<StatsigUser | null>(null);
+  const auth = signal<StatsigUser | null>(null);
 
   useEffect(() => {
-    setTimeout(async () => {
-      setAuth({ userID: "authed-user" });
-    }, 1000);
-  }, []);
+    auth.value = { userID: "authed-user" };
+  }, [auth]);
 
   return auth;
 }
@@ -46,9 +45,10 @@ export function BootstrappedStatsigProvider({
   );
 
   useEffect(() => {
-    if (auth) {
-      client.dataAdapter.prefetchData(auth).then(() => {
-        client.updateUserSync(auth);
+    const authUser = auth.value;
+    if (authUser) {
+      client.dataAdapter.prefetchData(authUser).then(() => {
+        client.updateUserSync(authUser);
       });
     }
   }, [client, initialUser, auth]);
