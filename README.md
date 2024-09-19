@@ -1,3 +1,21 @@
+
+# Statsig Demo
+
+- User makes request to root page "/"
+- middleware.ts runs and sets a cookie with a Stable ID if needed
+- root layout.tsx extracts Stable ID from cookie and sets it on the StatsigUser object 
+  - Unauthed User: `{ userID: "anonymous", customIDs: { stableID: "GENERATED_STABLE_ID" } }`
+- root layout.tsx uses the Statsig Server SDK to generate the evaluations values for the provided StatsigUser object
+- BootstrappedStatsigProvider takes in the StatsigUser and the evaluations values and bootstraps the Statsig Client SDK
+- on the client side, after the first render, the User is "authorized" and the new UserID is attached to the StatsigUser object
+  - Authed User: `{ userID: "AUTH_ID", customIDs: { stableID: "GENERATED_STABLE_ID" } }`
+- a `prefetchData` call is made for the new StatsigUser object, this hits the proxy/initialize route
+- proxy/initialize/route.ts uses the Statsig Server SDK to generate the evaluations values for the authorized StatsigUser object
+
+
+# Next JS Readme
+
+
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 ## Getting Started
