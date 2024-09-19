@@ -77,7 +77,9 @@ export function BootstrappedStatsigProvider(
       client.dataAdapter
         .prefetchData(authedUser)
         .then(() => {
-          client.updateUserSync(authedUser);
+          client.updateUserSync(authedUser, {
+            disableBackgroundCacheRefresh: true, // not required because we are bootstrapping
+          });
         })
         .catch(console.error);
     }
