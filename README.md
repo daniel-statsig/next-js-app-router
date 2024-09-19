@@ -13,6 +13,12 @@
 - proxy/initialize/route.ts uses the Statsig Server SDK to generate the evaluations values for the authorized StatsigUser object
 
 
+
+Note: You should only see a single /v1/initialize request from the `prefetchData` call
+
+![Screenshot 2024-09-19 at 1 47 16 PM](https://github.com/user-attachments/assets/952f0a05-bb7e-459e-9712-9577e1ce8320)
+
+
 # Next JS Readme
 
 
