@@ -2,8 +2,9 @@ import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
 
-import { getStatsigValues } from "./StatsigHelpers"; // todo: Get values from statsig-node
+import { getStableId, getStatsigValues } from "./StatsigHelpers"; // todo: Get values from statsig-node
 import { BootstrappedStatsigProvider } from "./BootstrappedStatsigProvider";
+import { StatsigUser } from "statsig-node";
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -26,7 +27,15 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const user = { userID: "anonymous" };
+  const user: StatsigUser = {
+    userID: "anonymous",
+  };
+
+  const stableID = getStableId();
+  if (stableID) {
+    user.customIDs = { stableID };
+  }
+
   const { values, clientSdkKey } = await getStatsigValues(user);
 
   return (

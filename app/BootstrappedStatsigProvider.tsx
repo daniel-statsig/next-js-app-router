@@ -2,56 +2,86 @@
 
 import { signal } from "@preact/signals";
 import {
+  StatsigClient,
   StatsigProvider,
   StatsigUser,
-  useClientBootstrapInit
 } from "@statsig/react-bindings";
-import { useEffect } from "react";
+import { useEffect, useMemo, useRef } from "react";
 
-function useAuth() {
-  const auth = signal<StatsigUser | null>(null);
+const SDK_OPTIONS = {
+  networkConfig: {
+    logEventUrl: "http://localhost:3000/proxy/rgstr",
+    initializeUrl: "http://localhost:3000/proxy/initialize",
+  },
+  disableCompression: true,
+  disableStatsigEncoding: true,
+};
+
+type StatsigSetupProps = {
+  clientSdkKey: string;
+  initialUser: StatsigUser;
+  initialValues: string;
+};
+
+function useAuthorizeUser() {
+  const auth = signal<string | null>(null);
 
   useEffect(() => {
-    auth.value = { userID: "authed-user" };
+    auth.value = "authed-user";
   }, [auth]);
 
   return auth;
 }
 
-export function BootstrappedStatsigProvider({
+function useStatsigClientSetup({
   clientSdkKey,
   initialUser,
   initialValues,
-  children,
-}: {
-  clientSdkKey: string;
-  initialUser: StatsigUser;
-  initialValues: string;
-  children: React.ReactNode;
-}) {
-  const auth = useAuth();
-  const client = useClientBootstrapInit(
-    clientSdkKey,
-    initialUser,
-    initialValues,
-    {
-      networkConfig: {
-        logEventUrl: "http://localhost:3000/proxy/rgstr",
-        initializeUrl: "http://localhost:3000/proxy/initialize",
-      },
-      disableCompression: true,
-      disableStatsigEncoding: true,
+}: StatsigSetupProps) {
+  const ref = useRef<StatsigClient | null>(null);
+
+  const client = useMemo(() => {
+    if (ref.current) {
+      return ref.current;
     }
-  );
+
+    const client = new StatsigClient(clientSdkKey, initialUser, SDK_OPTIONS);
+
+    ref.current = client;
+
+    client.dataAdapter.setData(initialValues);
+    client.initializeSync({
+      disableBackgroundCacheRefresh: true, // not required because we are bootstrapping
+    });
+
+    return client;
+  }, [clientSdkKey, initialUser, initialValues]);
+
+  return client;
+}
+
+export function BootstrappedStatsigProvider(
+  props: StatsigSetupProps & {
+    children: React.ReactNode;
+  }
+) {
+  const auth = useAuthorizeUser();
+  const client = useStatsigClientSetup(props);
 
   useEffect(() => {
-    const authUser = auth.value;
-    if (authUser) {
-      client.dataAdapter.prefetchData(authUser).then(() => {
-        client.updateUserSync(authUser);
-      });
-    }
-  }, [client, initialUser, auth]);
+    const authUserID = auth.value;
+    if (authUserID) {
+      const authedUser = JSON.parse(JSON.stringify(props.initialUser)); // Deep clone the initial user object
+      authedUser.userID = authUserID; // Only update the userID
 
-  return <StatsigProvider client={client}>{children}</StatsigProvider>;
+      client.dataAdapter
+        .prefetchData(authedUser)
+        .then(() => {
+          client.updateUserSync(authedUser);
+        })
+        .catch(console.error);
+    }
+  }, [client, props.initialUser, auth]);
+
+  return <StatsigProvider client={client}>{props.children}</StatsigProvider>;
 }

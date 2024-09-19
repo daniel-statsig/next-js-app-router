@@ -2,14 +2,23 @@
 
 import { useStatsigClient } from "@statsig/react-bindings";
 
-
-export function ExperimentCheck() {
+export function ExperimentCheck({
+  experimentName,
+}: {
+  experimentName: string;
+}) {
   const { client } = useStatsigClient();
-  const experiment = client.getExperiment('an_experiment');
+  const experiment = client.getExperiment(experimentName);
 
-  return <div>
-    <div>{JSON.stringify(experiment.value)}</div>
-    <div>{experiment.details.reason}</div>
-    <div>{experiment.groupName}</div>
-  </div>;
+  return (
+    <div>
+      <div>Experiment: {experimentName}</div>
+      <div>
+        Value:
+        <pre>{JSON.stringify(experiment.value, null, 2)}</pre>
+      </div>
+      <div>Reason: {experiment.details.reason}</div>
+      <div>Group: {experiment.groupName}</div>
+    </div>
+  );
 }
